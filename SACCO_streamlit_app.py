@@ -14,7 +14,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", sco
 client = gspread.authorize(creds)
 
 # Open the Google Sheet (replace 'your_sheet_name' with the actual name of your Google Sheet)
-sheet = client.open("your_sheet_name").sheet1
+sheet = client.open("your_sheet_name")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
@@ -46,12 +46,12 @@ elif page == "Member Management":
     registration_date = st.date_input("Select Registration Date:", datetime.now().date())
 
     if st.button("Register Member"):
-        sheet.append_row([member_id, member_name, member_contact, str(registration_date)])
+        sheet.worksheet("Member Management").append_row([member_id, member_name, member_contact, str(registration_date)])
         st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
 
     # Member List
     st.subheader("Registered Members")
-    member_data = sheet.get_all_records()
+    member_data = sheet.worksheet("Member Management").get_all_records()
     df_members = pd.DataFrame(member_data)
     st.dataframe(df_members)
 
@@ -65,7 +65,7 @@ elif page == "Savings & Deposits":
     savings_date = st.date_input("Select date of transaction:", datetime.now().date())
     transaction_id = st.text_input("Enter transaction ID:")
     if st.button("Update Savings"):
-        sheet.append_row([savings_amount, str(savings_date), transaction_id])
+        sheet.worksheet("Savings & Deposits").append_row([savings_amount, str(savings_date), transaction_id])
         st.success(f"You have successfully added UGX {savings_amount} to your savings on {savings_date}. Transaction ID: {transaction_id}.")
 
     # User Input for Deposits
@@ -74,7 +74,7 @@ elif page == "Savings & Deposits":
     deposit_date = st.date_input("Select date of deposit:", datetime.now().date())
     deposit_transaction_id = st.text_input("Enter deposit transaction ID:")
     if st.button("Update Deposits"):
-        sheet.append_row([deposit_amount, str(deposit_date), deposit_transaction_id])
+        sheet.worksheet("Savings & Deposits").append_row([deposit_amount, str(deposit_date), deposit_transaction_id])
         st.success(f"You have successfully added UGX {deposit_amount} as a deposit on {deposit_date}. Transaction ID: {deposit_transaction_id}.")
 
 # Loan Management Page
@@ -97,7 +97,7 @@ elif page == "Loan Management":
     if st.button("Submit Loan Application"):
         total_repayment = loan_amount * (1 + interest_rate)
         monthly_installment = total_repayment / loan_period
-        sheet.append_row([loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id])
+        sheet.worksheet("Loan Management").append_row([loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id])
         st.success(f"Loan Pending Approval! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
     # Loan Repayment Tracking (Placeholder Example)
@@ -140,9 +140,28 @@ elif page == "Notifications":
     # Send Email Notifications
     st.subheader("Send Email Notification to Members")
     notification_message = st.text_area("Enter your message:")
+    
+    notification_type = st.radio(
+        "Send to:",
+        ["All Members", "Individual Member"]
+    )
+    
+    if notification_type == "Individual Member":
+        member_email = st.text_input("Enter the member's email address:")
+        if st.button("Send Notification to Member"):
+            # Here you would add the code to send an email to the individual member
+            # You can use libraries like smtplib to send emails
+            st.success(f"Email notification sent successfully to {member_email}.")
 
-    if st.button("Send Notification"):
-        st.success("Email notification sent successfully.")
+    elif notification_type == "All Members":
+        if st.button("Send Notification to All Members"):
+            # Here you would add the code to send emails to all members
+            # For example, you can fetch the email addresses from your Google Sheet
+            member_data = sheet.worksheet("Member Management").get_all_records()
+            for member in member_data:
+                email = member["Contact"]  # Assuming 'Contact' field contains email addresses
+                # Code to send email
+            st.success("Email notification sent successfully to all members.")
 
 # Footer
 st.sidebar.markdown("---")

@@ -113,22 +113,12 @@ elif page == "Savings & Deposits":
     savings_amount = st.number_input("Enter amount to add to savings:", min_value=0, value=0)
     savings_date = st.date_input("Select date of transaction:", datetime.now().date())
     transaction_id = st.text_input("Enter transaction ID:")
+    
     if st.button("Update Savings"):
         c.execute("INSERT INTO savings_deposits (amount, date, transaction_id) VALUES (?, ?, ?)",
                   (savings_amount, str(savings_date), transaction_id))
         conn.commit()
         st.success(f"You have successfully added UGX {savings_amount} to your savings on {savings_date}. Transaction ID: {transaction_id}.")
-
-    # User Input for Deposits
-    st.subheader("Add a Deposit")
-    deposit_amount = st.number_input("Enter deposit amount:", min_value=0, value=0)
-    deposit_date = st.date_input("Select date of deposit:", datetime.now().date())
-    deposit_transaction_id = st.text_input("Enter deposit transaction ID:")
-    if st.button("Update Deposits"):
-        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id) VALUES (?, ?, ?)",
-                  (deposit_amount, str(deposit_date), deposit_transaction_id))
-        conn.commit()
-        st.success(f"You have successfully added UGX {deposit_amount} as a deposit on {deposit_date}. Transaction ID: {deposit_transaction_id}.")
 
 # Loan Management Page
 elif page == "Loan Management":

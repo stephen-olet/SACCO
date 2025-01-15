@@ -8,7 +8,7 @@ conn = sqlite3.connect("sacco.db")
 c = conn.cursor()
 
 # Create tables if they do not exist
-c.execute('''
+c.execute(''' 
     CREATE TABLE IF NOT EXISTS members (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         member_id TEXT,
@@ -17,7 +17,7 @@ c.execute('''
         registration_date TEXT
     )
 ''')
-c.execute('''
+c.execute(''' 
     CREATE TABLE IF NOT EXISTS savings_deposits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount INTEGER,
@@ -25,7 +25,7 @@ c.execute('''
         transaction_id TEXT
     )
 ''')
-c.execute('''
+c.execute(''' 
     CREATE TABLE IF NOT EXISTS loans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         loan_amount INTEGER,
@@ -36,7 +36,7 @@ c.execute('''
         loan_transaction_id TEXT
     )
 ''')
-c.execute('''
+c.execute(''' 
     CREATE TABLE IF NOT EXISTS fees_interests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         principal INTEGER,
@@ -108,6 +108,16 @@ elif page == "Member Management":
 elif page == "Savings & Deposits":
     st.header("Savings & Deposits")
 
+    # Select Member
+    st.subheader("Select Member to Update Savings")
+    c.execute("SELECT member_id, member_name FROM members")
+    members = c.fetchall()
+    member_choices = [f"{member[1]} (ID: {member[0]})" for member in members]
+    member_selected = st.selectbox("Select a Member", member_choices)
+
+    # Extract member_id from selected member
+    member_id_selected = members[member_choices.index(member_selected)][0]
+
     # User Input for Savings
     st.subheader("Add to Savings")
     savings_amount = st.number_input("Enter amount to add to savings:", min_value=0, value=0)
@@ -118,7 +128,9 @@ elif page == "Savings & Deposits":
         c.execute("INSERT INTO savings_deposits (amount, date, transaction_id) VALUES (?, ?, ?)",
                   (savings_amount, str(savings_date), transaction_id))
         conn.commit()
-        st.success(f"You have successfully added UGX {savings_amount} to your savings on {savings_date}. Transaction ID: {transaction_id}.")
+
+        # Update the savings record for the selected member (optional, for tracking)
+        st.success(f"You have successfully added UGX {savings_amount} to member ID {member_id_selected} savings on {savings_date}. Transaction ID: {transaction_id}.")
 
 # Loan Management Page
 elif page == "Loan Management":

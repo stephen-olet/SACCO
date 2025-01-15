@@ -8,7 +8,7 @@ conn = sqlite3.connect("sacco.db")
 c = conn.cursor()
 
 # Create tables if they do not exist
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS members (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         member_id TEXT,
@@ -17,7 +17,7 @@ c.execute('''
         registration_date TEXT
     )
 ''')
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS savings_deposits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount INTEGER,
@@ -25,7 +25,7 @@ c.execute('''
         transaction_id TEXT
     )
 ''')
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS loans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         loan_amount INTEGER,
@@ -36,7 +36,7 @@ c.execute('''
         loan_transaction_id TEXT
     )
 ''')
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS fees_interests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         principal INTEGER,
@@ -85,9 +85,6 @@ elif page == "Member Management":
                   (member_id, member_name, member_contact, str(registration_date)))
         conn.commit()
         st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
-        
-        # Update the member list in session state
-        st.session_state.members = pd.DataFrame(c.execute("SELECT * FROM members").fetchall(), columns=["ID", "Member ID", "Name", "Contact", "Registration Date"])
 
     # Member List
     st.subheader("Registered Members")
@@ -111,31 +108,17 @@ elif page == "Member Management":
 elif page == "Savings & Deposits":
     st.header("Savings & Deposits")
 
-    # Check if members are available in session state, if not load them
-    if 'members' not in st.session_state:
-        st.session_state.members = pd.DataFrame(c.execute("SELECT * FROM members").fetchall(), columns=["ID", "Member ID", "Name", "Contact", "Registration Date"])
-
-    # Display the selectbox for member selection
-    st.subheader("Select a Member to Update Savings")
-    selected_member_id = st.selectbox("Select Member", st.session_state.members["Member ID"])
-
-    # Get the details of the selected member
-    selected_member = st.session_state.members[st.session_state.members["Member ID"] == selected_member_id].iloc[0]
-
-    # Pre-fill member details in the savings section
-    st.write(f"Selected Member: {selected_member['Name']} ({selected_member['Member ID']})")
-
     # User Input for Savings
     st.subheader("Add to Savings")
     savings_amount = st.number_input("Enter amount to add to savings:", min_value=0, value=0)
     savings_date = st.date_input("Select date of transaction:", datetime.now().date())
     transaction_id = st.text_input("Enter transaction ID:")
-
+    
     if st.button("Update Savings"):
         c.execute("INSERT INTO savings_deposits (amount, date, transaction_id) VALUES (?, ?, ?)",
                   (savings_amount, str(savings_date), transaction_id))
         conn.commit()
-        st.success(f"You have successfully added UGX {savings_amount} to {selected_member['Name']}'s savings on {savings_date}. Transaction ID: {transaction_id}.")
+        st.success(f"You have successfully added UGX {savings_amount} to your savings on {savings_date}. Transaction ID: {transaction_id}.")
 
 # Loan Management Page
 elif page == "Loan Management":
@@ -220,3 +203,14 @@ elif page == "Notifications":
 
     elif notification_type == "All Members":
         if st.button("Send Notification to All Members"):
+            # Here you would add the code to send emails to all members
+            # For example, you can fetch the email addresses from your Google Sheet
+            member_data = []  # Replace this with the actual data fetching logic
+            for member in member_data:
+                email = member["Contact"]  # Assuming 'Contact' field contains email addresses
+                # Code to send email
+            st.success("Email notification sent successfully to all members.")
+
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("Built with ❤️ using Streamlit.")

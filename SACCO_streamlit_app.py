@@ -216,4 +216,4 @@ elif page == "Loan Management":
         c.execute("INSERT INTO loans (member_id, loan_amount, loan_period, total_repayment, monthly_installment, loan_date, loan_transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
                   (member_id, loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id))
         conn.commit()
-        st.success(f"Loan Pending Approval! Total repayment: UG
+        st.success(f"Loan Pending Approval! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}.

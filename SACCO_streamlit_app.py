@@ -2,19 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 # App Title
 st.title("INACAN SACCO App")
-
-# Authenticate and initialize Google Sheets
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-client = gspread.authorize(creds)
-
-# Open the Google Sheet (replace 'your_sheet_name' with the actual name of your Google Sheet)
-sheet = client.open("your_sheet_name")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
@@ -46,12 +36,16 @@ elif page == "Member Management":
     registration_date = st.date_input("Select Registration Date:", datetime.now().date())
 
     if st.button("Register Member"):
-        sheet.worksheet("Member Management").append_row([member_id, member_name, member_contact, str(registration_date)])
         st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
 
-    # Member List
+    # Member List (Placeholder Example)
     st.subheader("Registered Members")
-    member_data = sheet.worksheet("Member Management").get_all_records()
+    member_data = {
+        "Member ID": [],
+        "Name": [],
+        "Contact": [],
+        "Registration Date": []
+    }
     df_members = pd.DataFrame(member_data)
     st.dataframe(df_members)
 
@@ -65,7 +59,6 @@ elif page == "Savings & Deposits":
     savings_date = st.date_input("Select date of transaction:", datetime.now().date())
     transaction_id = st.text_input("Enter transaction ID:")
     if st.button("Update Savings"):
-        sheet.worksheet("Savings & Deposits").append_row([savings_amount, str(savings_date), transaction_id])
         st.success(f"You have successfully added UGX {savings_amount} to your savings on {savings_date}. Transaction ID: {transaction_id}.")
 
     # User Input for Deposits
@@ -74,7 +67,6 @@ elif page == "Savings & Deposits":
     deposit_date = st.date_input("Select date of deposit:", datetime.now().date())
     deposit_transaction_id = st.text_input("Enter deposit transaction ID:")
     if st.button("Update Deposits"):
-        sheet.worksheet("Savings & Deposits").append_row([deposit_amount, str(deposit_date), deposit_transaction_id])
         st.success(f"You have successfully added UGX {deposit_amount} as a deposit on {deposit_date}. Transaction ID: {deposit_transaction_id}.")
 
 # Loan Management Page
@@ -97,7 +89,6 @@ elif page == "Loan Management":
     if st.button("Submit Loan Application"):
         total_repayment = loan_amount * (1 + interest_rate)
         monthly_installment = total_repayment / loan_period
-        sheet.worksheet("Loan Management").append_row([loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id])
         st.success(f"Loan Pending Approval! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
     # Loan Repayment Tracking (Placeholder Example)
@@ -157,7 +148,7 @@ elif page == "Notifications":
         if st.button("Send Notification to All Members"):
             # Here you would add the code to send emails to all members
             # For example, you can fetch the email addresses from your Google Sheet
-            member_data = sheet.worksheet("Member Management").get_all_records()
+            member_data = []  # Replace this with the actual data fetching logic
             for member in member_data:
                 email = member["Contact"]  # Assuming 'Contact' field contains email addresses
                 # Code to send email

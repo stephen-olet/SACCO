@@ -22,7 +22,8 @@ c.execute('''
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount INTEGER,
         date TEXT,
-        transaction_id TEXT
+        transaction_id TEXT,
+        member_id TEXT
     )
 ''')
 c.execute(''' 
@@ -56,7 +57,7 @@ st.title("INACAN SACCO App")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Go to:",
-    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications"]
+    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "Summary"]
 )
 
 # About Page
@@ -126,8 +127,8 @@ elif page == "Savings & Deposits":
     transaction_id = st.text_input("Enter transaction ID:")
     
     if st.button("Update Savings"):
-        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id) VALUES (?, ?, ?)",
-                  (savings_amount, str(savings_date), transaction_id))
+        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id, member_id) VALUES (?, ?, ?, ?)",
+                  (savings_amount, str(savings_date), transaction_id, member_id_selected))
         conn.commit()
 
         # Update the savings record for the selected member (optional, for tracking)
@@ -226,7 +227,26 @@ elif page == "Notifications":
 
     elif notification_type == "All Members":
         if st.button("Send Notification to All Members"):
-            # Here you would add the code to send emails to all members
-            # For example, by querying the database for all member emails
+            # Here you would add the code to send an email to all registered members
             st.success("Email notification sent successfully to all members.")
 
+# Summary Page
+elif page == "Summary":
+    st.header("Summary of All Transactions")
+
+    # Fetch Savings & Deposits Transactions
+    c.execute("SELECT * FROM savings_deposits")
+    savings_data = c.fetchall()
+    df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
+
+    # Fetch Loan Transactions
+    c.execute("SELECT * FROM loans")
+    loan_data = c.fetchall()
+    df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"])
+
+    # Display DataFrames
+    st.subheader("Savings & Deposits")
+    st.dataframe(df_savings)
+
+    st.subheader("Loans")
+    st.dataframe(df_loans)

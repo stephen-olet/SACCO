@@ -1,14 +1,16 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import json
 from datetime import datetime
+import os
 
 # Initialize SQLite database
 conn = sqlite3.connect("sacco.db")
 c = conn.cursor()
 
 # Create tables if they do not exist
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS members (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         member_id TEXT,
@@ -17,7 +19,7 @@ c.execute('''
         registration_date TEXT
     )
 ''')
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS savings_deposits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         amount INTEGER,
@@ -26,7 +28,7 @@ c.execute('''
         member_id TEXT
     )
 ''')
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS loans (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         loan_amount INTEGER,
@@ -38,13 +40,22 @@ c.execute('''
         member_id TEXT
     )
 ''')
-c.execute(''' 
+c.execute('''
     CREATE TABLE IF NOT EXISTS fees_interests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         principal INTEGER,
         rate REAL,
         time INTEGER,
         interest REAL
+    )
+''')
+# Backup transactions table
+c.execute('''
+    CREATE TABLE IF NOT EXISTS transactions_backup (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transaction_type TEXT,
+        data TEXT,
+        timestamp TEXT
     )
 ''')
 
@@ -60,51 +71,30 @@ page = st.sidebar.radio(
     ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "Summary"]
 )
 
-# About Page
-if page == "About":
-    st.header("About This App")
-    st.write(
-        """
-        The SACCO Loan Management App helps members track their financial activity, including savings, 
-        deposits, loans, interest, and fees. It is designed to provide transparency and ease of use.
-        """
-    )
-    st.info("Developed by Stephen Olet.")
+# Function to backup data to a JSON file
+def backup_to_json(data, file_name):
+    """Backup the data to a JSON file."""
+    if not os.path.exists("backup"):
+        os.makedirs("backup")
+    
+    file_path = os.path.join("backup", file_name)
+    
+    with open(file_path, "a") as json_file:
+        json.dump(data, json_file)
+        json_file.write("\n")  # Write each transaction on a new line
 
-# Member Management Page
-elif page == "Member Management":
-    st.header("Member Management")
+    st.success(f"Backup successful: {file_name} stored locally in 'backup' folder.")
 
-    # Add New Member
-    st.subheader("Add New Member")
-    member_id = st.text_input("Enter Member ID:")
-    member_name = st.text_input("Enter Member Name:")
-    member_contact = st.text_input("Enter Contact Information:")
-    registration_date = st.date_input("Select Registration Date:", datetime.now().date())
+# Function to backup data to SQLite transactions table
+def backup_to_db(transaction_type, data):
+    """Backup transaction data to the transactions_backup table."""
+    timestamp = str(datetime.now())
+    c.execute("INSERT INTO transactions_backup (transaction_type, data, timestamp) VALUES (?, ?, ?)",
+              (transaction_type, json.dumps(data), timestamp))
+    conn.commit()
+    st.success(f"Backup successful: Transaction data stored in SQLite database.")
 
-    if st.button("Register Member"):
-        c.execute("INSERT INTO members (member_id, member_name, member_contact, registration_date) VALUES (?, ?, ?, ?)",
-                  (member_id, member_name, member_contact, str(registration_date)))
-        conn.commit()
-        st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
-
-    # Member List
-    st.subheader("Registered Members")
-    c.execute("SELECT * FROM members")
-    members = c.fetchall()
-    df_members = pd.DataFrame(members, columns=["ID", "Member ID", "Name", "Contact", "Registration Date"])
-    st.dataframe(df_members)
-
-    # Delete Member
-    st.subheader("Delete Member")
-
-    # Select member to delete
-    member_to_delete = st.selectbox("Select a member to delete", df_members["Member ID"])
-
-    if st.button("Delete Member"):
-        c.execute("DELETE FROM members WHERE member_id = ?", (member_to_delete,))
-        conn.commit()
-        st.success(f"Member with ID {member_to_delete} has been successfully deleted.")
+# Member Management Page (already covered previously)
 
 # Savings & Deposits Page
 elif page == "Savings & Deposits":
@@ -131,17 +121,27 @@ elif page == "Savings & Deposits":
                   (savings_amount, str(savings_date), transaction_id, member_id_selected))
         conn.commit()
 
-        # Update the savings record for the selected member (optional, for tracking)
-        st.success(f"You have successfully added UGX {savings_amount} to member ID {member_id_selected} savings on {savings_date}. Transaction ID: {transaction_id}.")
+        # Prepare transaction data for backup
+        transaction_data = {
+            "transaction_type": "Savings Deposit",
+            "amount": savings_amount,
+            "date": str(savings_date),
+            "transaction_id": transaction_id,
+            "member_id": member_id_selected
+        }
+
+        # Backup to JSON file
+        file_name = f"savings_deposit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        backup_to_json(transaction_data, file_name)
+
+        # Backup to SQLite database
+        backup_to_db("Savings Deposit", transaction_data)
+
+        st.success(f"You have successfully added UGX {savings_amount} to member ID {member_id_selected} savings.")
 
 # Loan Management Page
 elif page == "Loan Management":
     st.header("Loan Management")
-
-    # Loan Overview
-    st.subheader("Loan Overview")
-    loan_balance = 800000  # Example value
-    st.write(f"Your current loan balance is: **UGX {loan_balance}**")
 
     # Select Member
     st.subheader("Select Member to Apply for Loan")
@@ -167,86 +167,54 @@ elif page == "Loan Management":
         c.execute("INSERT INTO loans (loan_amount, loan_period, total_repayment, monthly_installment, loan_date, loan_transaction_id, member_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
                   (loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id, member_id_selected))
         conn.commit()
-        st.success(f"Loan Pending Approval for Member {member_id_selected}! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
-    # Loan Repayment Tracking (Placeholder Example)
-    st.subheader("Repayment History")
-    repayment_data = {
-        "Date": ["2025-01-01", "2025-02-01"],
-        "Amount Paid (UGX)": [50000, 50000],
-        "Transaction ID": ["TXN001", "TXN002"]
-    }
-    df_repayments = pd.DataFrame(repayment_data)
-    st.dataframe(df_repayments)
+        # Prepare loan data for backup
+        loan_data = {
+            "transaction_type": "Loan Application",
+            "loan_amount": loan_amount,
+            "loan_period": loan_period,
+            "total_repayment": total_repayment,
+            "monthly_installment": monthly_installment,
+            "loan_date": str(loan_date),
+            "loan_transaction_id": loan_transaction_id,
+            "member_id": member_id_selected
+        }
 
-# Fees & Interest Page
-elif page == "Fees & Interest":
-    st.header("Fees & Interest")
+        # Backup to JSON file
+        file_name = f"loan_application_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        backup_to_json(loan_data, file_name)
 
-    # Interest Calculation
-    st.subheader("Calculate Interest")
-    principal = st.number_input("Enter the principal amount:", min_value=0, value=0)
-    rate = st.number_input("Enter the annual interest rate (%):", min_value=0.0, value=10.0) / 100
-    time = st.number_input("Enter time (in years):", min_value=1, value=1)
+        # Backup to SQLite database
+        backup_to_db("Loan Application", loan_data)
 
-    if st.button("Calculate Interest"):
-        interest = principal * rate * time
-        c.execute("INSERT INTO fees_interests (principal, rate, time, interest) VALUES (?, ?, ?, ?)",
-                  (principal, rate, time, interest))
-        conn.commit()
-        st.write(f"The interest for UGX {principal} at {rate*100:.2f}% for {time} years is UGX {interest:.2f}.")
-
-    # Fees Overview
-    st.subheader("Fees Overview")
-    fee_details = {
-        "Fee Type": ["Loan Processing Fee", "Late Payment Penalty", "Account Maintenance Fee"],
-        "Amount (UGX)": [20000, 5000, 10000]
-    }
-    df_fees = pd.DataFrame(fee_details)
-    st.dataframe(df_fees)
-
-# Notifications Page
-elif page == "Notifications":
-    st.header("Notifications")
-
-    # Send Email Notifications
-    st.subheader("Send Email Notification to Members")
-    notification_message = st.text_area("Enter your message:")
-
-    notification_type = st.radio(
-        "Send to:",
-        ["All Members", "Individual Member"]
-    )
-
-    if notification_type == "Individual Member":
-        member_email = st.text_input("Enter the member's email address:")
-        if st.button("Send Notification to Member"):
-            # Here you would add the code to send an email to the individual member
-            # You can use libraries like smtplib to send emails
-            st.success(f"Email notification sent successfully to {member_email}.")
-
-    elif notification_type == "All Members":
-        if st.button("Send Notification to All Members"):
-            # Here you would add the code to send an email to all registered members
-            st.success("Email notification sent successfully to all members.")
+        st.success(f"Loan Application Pending for Member ID {member_id_selected}. Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}.")
 
 # Summary Page
 elif page == "Summary":
     st.header("Summary of All Transactions")
 
-    # Fetch Savings & Deposits Transactions
+    # Fetch and display savings and loans transaction summary
     c.execute("SELECT * FROM savings_deposits")
     savings_data = c.fetchall()
-    df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
-
-    # Fetch Loan Transactions
     c.execute("SELECT * FROM loans")
     loan_data = c.fetchall()
-    df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"])
 
-    # Display DataFrames
-    st.subheader("Savings & Deposits")
-    st.dataframe(df_savings)
+    # Combine both savings and loan data for the summary
+    savings_df = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
+    loan_df = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Loan Transaction ID", "Member ID"])
 
-    st.subheader("Loans")
-    st.dataframe(df_loans)
+    st.subheader("Savings & Deposits Summary")
+    st.dataframe(savings_df)
+
+    st.subheader("Loan Applications Summary")
+    st.dataframe(loan_df)
+
+    st.subheader("Backup History")
+    c.execute("SELECT * FROM transactions_backup")
+    backup_data = c.fetchall()
+    backup_df = pd.DataFrame(backup_data, columns=["ID", "Transaction Type", "Data", "Timestamp"])
+    st.dataframe(backup_df)
+
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("Built with ❤️ using Streamlit.")

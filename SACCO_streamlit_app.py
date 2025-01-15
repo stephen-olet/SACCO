@@ -33,7 +33,8 @@ c.execute('''
         total_repayment REAL,
         monthly_installment REAL,
         loan_date TEXT,
-        loan_transaction_id TEXT
+        loan_transaction_id TEXT,
+        member_id TEXT
     )
 ''')
 c.execute(''' 
@@ -136,10 +137,20 @@ elif page == "Savings & Deposits":
 elif page == "Loan Management":
     st.header("Loan Management")
 
-    # Current Loan Balance
+    # Loan Overview
     st.subheader("Loan Overview")
     loan_balance = 800000  # Example value
     st.write(f"Your current loan balance is: **UGX {loan_balance}**")
+
+    # Select Member
+    st.subheader("Select Member to Apply for Loan")
+    c.execute("SELECT member_id, member_name FROM members")
+    members = c.fetchall()
+    member_choices = [f"{member[1]} (ID: {member[0]})" for member in members]
+    member_selected = st.selectbox("Select a Member", member_choices)
+
+    # Extract member_id from selected member
+    member_id_selected = members[member_choices.index(member_selected)][0]
 
     # Loan Application
     st.subheader("Apply for a Loan")
@@ -152,10 +163,10 @@ elif page == "Loan Management":
     if st.button("Submit Loan Application"):
         total_repayment = loan_amount * (1 + interest_rate)
         monthly_installment = total_repayment / loan_period
-        c.execute("INSERT INTO loans (loan_amount, loan_period, total_repayment, monthly_installment, loan_date, loan_transaction_id) VALUES (?, ?, ?, ?, ?, ?)",
-                  (loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id))
+        c.execute("INSERT INTO loans (loan_amount, loan_period, total_repayment, monthly_installment, loan_date, loan_transaction_id, member_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                  (loan_amount, loan_period, total_repayment, monthly_installment, str(loan_date), loan_transaction_id, member_id_selected))
         conn.commit()
-        st.success(f"Loan Pending Approval! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
+        st.success(f"Loan Pending Approval for Member {member_id_selected}! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
     # Loan Repayment Tracking (Placeholder Example)
     st.subheader("Repayment History")
@@ -216,13 +227,6 @@ elif page == "Notifications":
     elif notification_type == "All Members":
         if st.button("Send Notification to All Members"):
             # Here you would add the code to send emails to all members
-            # For example, you can fetch the email addresses from your Google Sheet
-            member_data = []  # Replace this with the actual data fetching logic
-            for member in member_data:
-                email = member["Contact"]  # Assuming 'Contact' field contains email addresses
-                # Code to send email
+            # For example, by querying the database for all member emails
             st.success("Email notification sent successfully to all members.")
 
-# Footer
-st.sidebar.markdown("---")
-st.sidebar.markdown("Built with ❤️ using Streamlit.")

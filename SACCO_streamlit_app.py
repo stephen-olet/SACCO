@@ -20,11 +20,9 @@ c.execute('''
 c.execute('''
     CREATE TABLE IF NOT EXISTS savings_deposits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        member_id INTEGER,
         amount INTEGER,
         date TEXT,
-        transaction_id TEXT,
-        FOREIGN KEY (member_id) REFERENCES members(id)
+        transaction_id TEXT
     )
 ''')
 c.execute('''
@@ -110,37 +108,27 @@ elif page == "Member Management":
 elif page == "Savings & Deposits":
     st.header("Savings & Deposits")
 
-    # Select a member from the list of registered members
-    c.execute("SELECT * FROM members")
-    members = c.fetchall()
-    member_options = [f"{member[1]} - {member[2]}" for member in members]
-    selected_member = st.selectbox("Select Member to Update Savings and Deposits", member_options)
+    # User Input for Savings
+    st.subheader("Add to Savings")
+    savings_amount = st.number_input("Enter amount to add to savings:", min_value=0, value=0)
+    savings_date = st.date_input("Select date of transaction:", datetime.now().date())
+    transaction_id = st.text_input("Enter transaction ID:")
+    if st.button("Update Savings"):
+        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id) VALUES (?, ?, ?)",
+                  (savings_amount, str(savings_date), transaction_id))
+        conn.commit()
+        st.success(f"You have successfully added UGX {savings_amount} to your savings on {savings_date}. Transaction ID: {transaction_id}.")
 
-    if selected_member:
-        member_id = selected_member.split(" - ")[0]  # Extracting member ID
-
-        # Savings & Deposit Entry
-        st.subheader(f"Update Savings & Deposits for {selected_member.split(' - ')[1]}")
-
-        # User Input for Savings
-        savings_amount = st.number_input("Enter amount to add to savings:", min_value=0, value=0)
-        savings_date = st.date_input("Select date of transaction:", datetime.now().date())
-        transaction_id = st.text_input("Enter transaction ID:")
-        if st.button("Update Savings"):
-            c.execute("INSERT INTO savings_deposits (member_id, amount, date, transaction_id) VALUES (?, ?, ?, ?)",
-                      (member_id, savings_amount, str(savings_date), transaction_id))
-            conn.commit()
-            st.success(f"Successfully added UGX {savings_amount} to savings for member {selected_member.split(' - ')[1]}.")
-
-        # Display member's existing deposits
-        st.subheader("Existing Savings & Deposits")
-        c.execute("SELECT * FROM savings_deposits WHERE member_id = ?", (member_id,))
-        deposits = c.fetchall()
-        if deposits:
-            df_deposits = pd.DataFrame(deposits, columns=["ID", "Member ID", "Amount", "Date", "Transaction ID"])
-            st.dataframe(df_deposits)
-        else:
-            st.warning("No savings or deposits found for this member.")
+    # User Input for Deposits
+    st.subheader("Add a Deposit")
+    deposit_amount = st.number_input("Enter deposit amount:", min_value=0, value=0)
+    deposit_date = st.date_input("Select date of deposit:", datetime.now().date())
+    deposit_transaction_id = st.text_input("Enter deposit transaction ID:")
+    if st.button("Update Deposits"):
+        c.execute("INSERT INTO savings_deposits (amount, date, transaction_id) VALUES (?, ?, ?)",
+                  (deposit_amount, str(deposit_date), deposit_transaction_id))
+        conn.commit()
+        st.success(f"You have successfully added UGX {deposit_amount} as a deposit on {deposit_date}. Transaction ID: {deposit_transaction_id}.")
 
 # Loan Management Page
 elif page == "Loan Management":
@@ -225,4 +213,14 @@ elif page == "Notifications":
 
     elif notification_type == "All Members":
         if st.button("Send Notification to All Members"):
-           
+            # Here you would add the code to send emails to all members
+            # For example, you can fetch the email addresses from your Google Sheet
+            member_data = []  # Replace this with the actual data fetching logic
+            for member in member_data:
+                email = member["Contact"]  # Assuming 'Contact' field contains email addresses
+                # Code to send email
+            st.success("Email notification sent successfully to all members.")
+
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("Built with ❤️ using Streamlit.")

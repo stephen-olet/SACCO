@@ -10,28 +10,41 @@ st.title("INACAN SACCO App")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Go to:",
-    ["Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "About"]
+    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications"]
 )
 
-# Member Management Page
-if page == "Member Management":
-    st.header("Member Registration and Management")
+# About Page
+if page == "About":
+    st.header("About This App")
+    st.write(
+        """
+        The SACCO Loan Management App helps members track their financial activity, including savings, 
+        deposits, loans, interest, and fees. It is designed to provide transparency and ease of use.
+        """
+    )
+    st.info("Developed by Stephen Olet.")
 
-    # Member Registration Form
-    st.subheader("Register a New Member")
-    member_name = st.text_input("Enter member name:")
-    member_id = st.text_input("Enter member ID:")
-    member_contact = st.text_input("Enter contact number:")
+# Member Management Page
+elif page == "Member Management":
+    st.header("Member Management")
+
+    # Add New Member
+    st.subheader("Add New Member")
+    member_id = st.text_input("Enter Member ID:")
+    member_name = st.text_input("Enter Member Name:")
+    member_contact = st.text_input("Enter Contact Information:")
+    registration_date = st.date_input("Select Registration Date:", datetime.now().date())
 
     if st.button("Register Member"):
-        st.success(f"Member {member_name} (ID: {member_id}) has been successfully registered.")
+        st.success(f"Member {member_name} with ID {member_id} registered successfully on {registration_date}.")
 
     # Member List (Placeholder Example)
-    st.subheader("Member List")
+    st.subheader("Registered Members")
     member_data = {
-        "Member ID": ["M001", "M002"],
-        "Name": ["John Doe", "Jane Smith"],
-        "Contact": ["123456789", "987654321"]
+        "Member ID": [],
+        "Name": [],
+        "Contact": [],
+        "Registration Date": []
     }
     df_members = pd.DataFrame(member_data)
     st.dataframe(df_members)
@@ -76,7 +89,7 @@ elif page == "Loan Management":
     if st.button("Submit Loan Application"):
         total_repayment = loan_amount * (1 + interest_rate)
         monthly_installment = total_repayment / loan_period
-        st.success(f"Loan Approved! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
+        st.success(f"Loan Pending Approval! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
     # Loan Repayment Tracking (Placeholder Example)
     st.subheader("Repayment History")
@@ -115,24 +128,12 @@ elif page == "Fees & Interest":
 elif page == "Notifications":
     st.header("Notifications")
 
-    # Send SMS/Email Notifications
-    st.subheader("Send Notification to Members")
-    notification_type = st.selectbox("Choose notification type:", ["SMS", "Email"])
+    # Send Email Notifications
+    st.subheader("Send Email Notification to Members")
     notification_message = st.text_area("Enter your message:")
 
     if st.button("Send Notification"):
-        st.success(f"{notification_type} notification sent successfully.")
-
-# About Page
-elif page == "About":
-    st.header("About This App")
-    st.write(
-        """
-        The SACCO Loan Management App helps members track their financial activity, including savings, 
-        deposits, loans, interest, and fees. It is designed to provide transparency and ease of use.
-        """
-    )
-    st.info("Developed by Stephen Olet.")
+        st.success("Email notification sent successfully.")
 
 # Footer
 st.sidebar.markdown("---")

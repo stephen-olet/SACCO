@@ -10,33 +10,11 @@ st.title("INACAN SACCO App")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Go to:",
-    ["Overview", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "About"]
+    ["Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "About"]
 )
 
-# Overview Page
-if page == "Overview":
-    st.header("INACAN SACCO App")
-    st.write("Welcome to the INACAN SACCO App. Track your savings, deposits, loans, and fees.")
-
-    # Example Summary Data
-    summary = {
-        "Category": ["Savings", "Deposits", "Loans", "Interest Earned", "Fees Paid"],
-        "Amount (UGX)": [500000, 200000, 800000, 25000, 10000]
-    }
-    df_summary = pd.DataFrame(summary)
-
-    st.subheader("Summary Table")
-    st.dataframe(df_summary)
-
-    # Pie Chart for Distribution
-    st.subheader("Financial Distribution")
-    st.write("Visualize how your funds are distributed.")
-    pie_data = df_summary.set_index("Category")
-    st.write(pie_data.plot.pie(y="Amount (UGX)", autopct="%1.1f%%", figsize=(5, 5)))
-    st.pyplot()
-
 # Member Management Page
-elif page == "Member Management":
+if page == "Member Management":
     st.header("Member Registration and Management")
 
     # Member Registration Form

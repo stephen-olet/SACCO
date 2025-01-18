@@ -57,7 +57,7 @@ st.title("INACAN SACCO App")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Go to:",
-    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "Summary"]
+    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "Financial Summary"]
 )
 
 # About Page
@@ -160,7 +160,7 @@ elif page == "Loan Management":
         conn.commit()
         st.success(f"Loan Pending Approval for Member {member_id_selected}! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
-# Summary Page
+# Financial Summary Page
 elif page == "Summary":
     st.header("Summary of All Transactions")
 

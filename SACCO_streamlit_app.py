@@ -57,7 +57,7 @@ st.title("INACAN SACCO App")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Go to:",
-    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "Financial Summary"]
+    ["About", "Member Management", "Savings & Deposits", "Loan Management", "Fees & Interest", "Notifications", "Summary"]
 )
 
 # About Page
@@ -160,7 +160,7 @@ elif page == "Loan Management":
         conn.commit()
         st.success(f"Loan Pending Approval for Member {member_id_selected}! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
-# Financial Summary Page
+# Summary Page
 elif page == "Summary":
     st.header("Summary of All Transactions")
 
@@ -192,7 +192,7 @@ elif page == "Summary":
         savings_data = c.fetchall()
         df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
 
-        # Fetch Loans for Selected Member
+         # Fetch Loans for Selected Member
         c.execute("SELECT * FROM loans WHERE member_id = ?", (selected_member_id,))
         loan_data = c.fetchall()
         df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", 

@@ -192,5 +192,57 @@ elif page == "Summary":
         savings_data = c.fetchall()
         df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
 
-        # Fetch Loans for Selected Member
+          # Fetch Loans for Selected Member
         c.execute("SELECT * FROM loans WHERE member_id = ?", (selected_member_id,))
+        loan_data = c.fetchall()
+        df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", 
+                                                    "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"])
+
+    # Display Savings Summary
+    st.subheader("Savings & Deposits Summary")
+    if df_savings.empty:
+        st.write("No savings or deposit transactions found.")
+    else:
+        st.dataframe(df_savings)
+
+    # Display Loan Summary
+    st.subheader("Loan Transactions Summary")
+    if df_loans.empty:
+        st.write("No loan transactions found.")
+    else:
+        st.dataframe(df_loans)
+
+# Notifications Page
+elif page == "Notifications":
+    st.header("Notifications")
+    st.write("This feature is under development. Notifications will be available in future updates.")
+
+# Fees & Interest Page
+elif page == "Fees & Interest":
+    st.header("Fees & Interest Calculator")
+
+    # Inputs for Fees & Interest Calculation
+    st.subheader("Calculate Interest")
+    principal = st.number_input("Enter Principal Amount (UGX):", min_value=0, value=0)
+    rate = st.number_input("Enter Annual Interest Rate (%):", min_value=0.0, value=0.0)
+    time = st.number_input("Enter Time Period (Years):", min_value=0, value=0)
+
+    if st.button("Calculate Interest"):
+        interest = (principal * rate * time) / 100
+        c.execute("INSERT INTO fees_interests (principal, rate, time, interest) VALUES (?, ?, ?, ?)",
+                  (principal, rate, time, interest))
+        conn.commit()
+        st.success(f"Calculated Interest: UGX {interest:.2f}")
+
+    # Display Recorded Interest Data
+    st.subheader("Interest Records")
+    c.execute("SELECT * FROM fees_interests")
+    interest_records = c.fetchall()
+    if interest_records:
+        df_interest = pd.DataFrame(interest_records, columns=["ID", "Principal", "Rate (%)", "Time (Years)", "Interest"])
+        st.dataframe(df_interest)
+    else:
+        st.write("No interest records found.")
+
+# Closing the SQLite connection on app termination
+conn.close()

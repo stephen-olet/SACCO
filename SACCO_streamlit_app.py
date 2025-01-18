@@ -134,11 +134,6 @@ elif page == "Savings & Deposits":
 elif page == "Loan Management":
     st.header("Loan Management")
 
-    # Loan Overview
-    st.subheader("Loan Overview")
-    loan_balance = 800000  # Example value
-    st.write(f"Your current loan balance is: **UGX {loan_balance}**")
-
     # Select Member
     st.subheader("Select Member to Apply for Loan")
     c.execute("SELECT member_id, member_name FROM members")
@@ -199,19 +194,3 @@ elif page == "Summary":
 
         # Fetch Loans for Selected Member
         c.execute("SELECT * FROM loans WHERE member_id = ?", (selected_member_id,))
-        loan_data = c.fetchall()
-        df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"])
-
-    # Display Savings & Deposits
-    st.subheader("Savings & Deposits")
-    if not df_savings.empty:
-        st.dataframe(df_savings)
-    else:
-        st.write("No savings or deposit transactions found.")
-
-    # Display Loans
-    st.subheader("Loans")
-    if not df_loans.empty:
-        st.dataframe(df_loans)
-    else:
-        st.write("No loan transactions found.")

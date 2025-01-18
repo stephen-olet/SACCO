@@ -97,8 +97,6 @@ elif page == "Member Management":
 
     # Delete Member
     st.subheader("Delete Member")
-
-    # Select member to delete
     member_to_delete = st.selectbox("Select a member to delete", df_members["Member ID"])
 
     if st.button("Delete Member"):
@@ -125,13 +123,11 @@ elif page == "Savings & Deposits":
     savings_amount = st.number_input("Enter amount to add to savings:", min_value=0, value=0)
     savings_date = st.date_input("Select date of transaction:", datetime.now().date())
     transaction_id = st.text_input("Enter transaction ID:")
-    
+
     if st.button("Update Savings"):
         c.execute("INSERT INTO savings_deposits (amount, date, transaction_id, member_id) VALUES (?, ?, ?, ?)",
                   (savings_amount, str(savings_date), transaction_id, member_id_selected))
         conn.commit()
-
-        # Update the savings record for the selected member (optional, for tracking)
         st.success(f"You have successfully added UGX {savings_amount} to member ID {member_id_selected} savings on {savings_date}. Transaction ID: {transaction_id}.")
 
 # Loan Management Page
@@ -169,84 +165,53 @@ elif page == "Loan Management":
         conn.commit()
         st.success(f"Loan Pending Approval for Member {member_id_selected}! Total repayment: UGX {total_repayment:.2f}, Monthly installment: UGX {monthly_installment:.2f}. Application Date: {loan_date}. Transaction ID: {loan_transaction_id}.")
 
-    # Loan Repayment Tracking (Placeholder Example)
-    st.subheader("Repayment History")
-    repayment_data = {
-        "Date": ["2025-01-01", "2025-02-01"],
-        "Amount Paid (UGX)": [50000, 50000],
-        "Transaction ID": ["TXN001", "TXN002"]
-    }
-    df_repayments = pd.DataFrame(repayment_data)
-    st.dataframe(df_repayments)
-
-# Fees & Interest Page
-elif page == "Fees & Interest":
-    st.header("Fees & Interest")
-
-    # Interest Calculation
-    st.subheader("Calculate Interest")
-    principal = st.number_input("Enter the principal amount:", min_value=0, value=0)
-    rate = st.number_input("Enter the annual interest rate (%):", min_value=0.0, value=10.0) / 100
-    time = st.number_input("Enter time (in years):", min_value=1, value=1)
-
-    if st.button("Calculate Interest"):
-        interest = principal * rate * time
-        c.execute("INSERT INTO fees_interests (principal, rate, time, interest) VALUES (?, ?, ?, ?)",
-                  (principal, rate, time, interest))
-        conn.commit()
-        st.write(f"The interest for UGX {principal} at {rate*100:.2f}% for {time} years is UGX {interest:.2f}.")
-
-    # Fees Overview
-    st.subheader("Fees Overview")
-    fee_details = {
-        "Fee Type": ["Loan Processing Fee", "Late Payment Penalty", "Account Maintenance Fee"],
-        "Amount (UGX)": [20000, 5000, 10000]
-    }
-    df_fees = pd.DataFrame(fee_details)
-    st.dataframe(df_fees)
-
-# Notifications Page
-elif page == "Notifications":
-    st.header("Notifications")
-
-    # Send Email Notifications
-    st.subheader("Send Email Notification to Members")
-    notification_message = st.text_area("Enter your message:")
-
-    notification_type = st.radio(
-        "Send to:",
-        ["All Members", "Individual Member"]
-    )
-
-    if notification_type == "Individual Member":
-        member_email = st.text_input("Enter the member's email address:")
-        if st.button("Send Notification to Member"):
-            # Here you would add the code to send an email to the individual member
-            # You can use libraries like smtplib to send emails
-            st.success(f"Email notification sent successfully to {member_email}.")
-
-    elif notification_type == "All Members":
-        if st.button("Send Notification to All Members"):
-            # Here you would add the code to send an email to all registered members
-            st.success("Email notification sent successfully to all members.")
-
 # Summary Page
 elif page == "Summary":
     st.header("Summary of All Transactions")
 
-    # Fetch Savings & Deposits Transactions
-    c.execute("SELECT * FROM savings_deposits")
-    savings_data = c.fetchall()
-    df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
+    # Fetch Registered Members
+    c.execute("SELECT member_id, member_name FROM members")
+    members = c.fetchall()
+    member_choices = ["All Members"] + [f"{member[1]} (ID: {member[0]})" for member in members]
 
-    # Fetch Loan Transactions
-    c.execute("SELECT * FROM loans")
-    loan_data = c.fetchall()
-    df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"])
+    # Member Selection
+    selected_member = st.selectbox("Select a Member to View Transactions:", member_choices)
 
-    # Display DataFrames
+    if selected_member == "All Members":
+        # Fetch All Savings & Deposits Transactions
+        c.execute("SELECT * FROM savings_deposits")
+        savings_data = c.fetchall()
+        df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
+
+        # Fetch All Loan Transactions
+        c.execute("SELECT * FROM loans")
+        loan_data = c.fetchall()
+        df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"])
+
+    else:
+        # Extract Member ID from Selection
+        selected_member_id = members[member_choices.index(selected_member) - 1][0]
+
+        # Fetch Savings & Deposits for Selected Member
+        c.execute("SELECT * FROM savings_deposits WHERE member_id = ?", (selected_member_id,))
+        savings_data = c.fetchall()
+        df_savings = pd.DataFrame(savings_data, columns=["ID", "Amount", "Date", "Transaction ID", "Member ID"])
+
+        # Fetch Loans for Selected Member
+        c.execute("SELECT * FROM loans WHERE member_id = ?", (selected_member_id,))
+        loan_data = c.fetchall()
+        df_loans = pd.DataFrame(loan_data, columns=["ID", "Loan Amount", "Loan Period", "Total Repayment", "Monthly Installment", "Loan Date", "Transaction ID", "Member ID"])
+
+    # Display Savings & Deposits
     st.subheader("Savings & Deposits")
-    st.dataframe(df_savings)
+    if not df_savings.empty:
+        st.dataframe(df_savings)
+    else:
+        st.write("No savings or deposit transactions found.")
 
+    # Display Loans
     st.subheader("Loans")
-    st.dataframe(df_loans)
+    if not df_loans.empty:
+        st.dataframe(df_loans)
+    else:
+        st.write("No loan transactions found.")
